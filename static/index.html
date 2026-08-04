@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL 내전 ELO 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">
+                ⚔️ LoL 내전 ELO 랭킹보드
+            </h1>
+            <p class="text-gray-400">우리들만의 치열한 전적과 티어</p>
+        </header>
+
+        <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-10 border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <span class="text-yellow-400 mr-2">🏆</span> 실시간 순위
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-700 text-gray-300 text-sm uppercase tracking-wider">
+                            <th class="p-4 rounded-tl-lg">Rank</th>
+                            <th class="p-4">소환사명</th>
+                            <th class="p-4">본명 (소속)</th>
+                            <th class="p-4 text-center">ELO 점수</th>
+                            <th class="p-4 text-center">전적</th>
+                            <th class="p-4 text-center rounded-tr-lg">승률</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-body" class="text-gray-200">
+                        <tr><td colspan="6" class="p-4 text-center text-gray-500">랭킹 데이터를 불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <span class="text-blue-400 mr-2">🔥</span> 최근 내전 기록
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-700 text-gray-300 text-sm tracking-wider">
+                            <th class="p-4 rounded-tl-lg">매치 ID</th>
+                            <th class="p-4">게임 모드</th>
+                            <th class="p-4 text-center">게임 시간</th>
+                            <th class="p-4 text-center">승리 팀</th>
+                            <th class="p-4 text-right rounded-tr-lg">플레이 일시</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matches-body" class="text-gray-200">
+                        <tr><td colspan="5" class="p-4 text-center text-gray-500">매치 데이터를 불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchRankings() {
+            try {
+                const response = await fetch('/api/rankings');
+                const result = await response.json();
+                const tbody = document.getElementById('ranking-body');
+                tbody.innerHTML = ''; 
+
+                if (result.status === 'success') {
+                    result.data.forEach(user => {
+                        let rankStyle = "text-gray-400";
+                        if (user.rank === 1) rankStyle = "text-yellow-400 font-bold text-xl";
+                        else if (user.rank === 2) rankStyle = "text-gray-300 font-bold text-lg";
+                        else if (user.rank === 3) rankStyle = "text-amber-600 font-bold text-lg";
+
+                        // 본명이 등록되어 있으면 색상을 다르게 표시
+                        let nameStyle = user.real_name === "미등록" ? "text-gray-500 text-sm" : "text-gray-100 font-bold";
+
+                        const row = `
+                            <tr class="border-b border-gray-700 hover:bg-gray-750 transition-colors">
+                                <td class="p-4 ${rankStyle}">${user.rank}</td>
+                                <td class="p-4 font-bold text-blue-300">${user.summoner_name}</td>
+                                <td class="p-4 ${nameStyle}">${user.real_name}</td>
+                                <td class="p-4 text-center font-bold text-emerald-400">${user.elo_rating}</td>
+                                <td class="p-4 text-center">${user.wins}승 ${user.losses}패</td>
+                                <td class="p-4 text-center text-sm">${user.win_rate}%</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+            } catch (error) {
+                console.error("랭킹 로드 실패:", error);
+            }
+        }
+
+        async function fetchMatches() {
+            try {
+                const response = await fetch('/api/matches');
+                const result = await response.json();
+                const tbody = document.getElementById('matches-body');
+                tbody.innerHTML = ''; 
+
+                if (result.status === 'success') {
+                    result.data.forEach(match => {
+                        // 시간 포맷팅 (T와 Z 제거)
+                        const date = new Date(match.game_creation);
+                        const formattedDate = date.toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        
+                        // 승리 팀 색상
+                        const teamColor = match.winning_team.includes("블루") ? "text-blue-400 font-bold" : "text-red-400 font-bold";
+
+                        const row = `
+                            <tr class="border-b border-gray-700 hover:bg-gray-750 transition-colors">
+                                <td class="p-4 text-gray-400 text-sm cursor-pointer hover:text-white" title="클릭해서 상세 보기(추후구현)">${match.match_id.replace('KR_', '')}</td>
+                                <td class="p-4 text-purple-300">${match.game_mode}</td>
+                                <td class="p-4 text-center text-gray-300">${match.game_duration_min}분</td>
+                                <td class="p-4 text-center ${teamColor}">${match.winning_team}</td>
+                                <td class="p-4 text-right text-gray-400 text-sm">${formattedDate}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+            } catch (error) {
+                console.error("매치 로드 실패:", error);
+            }
+        }
+
+        window.onload = () => {
+            fetchRankings();
+            fetchMatches();
+        };
+    </script>
+</body>
+</html>
