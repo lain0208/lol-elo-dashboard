@@ -13,17 +13,28 @@
         body { font-family: 'Noto Sans KR', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
+<body class="bg-gray-900 text-gray-100 min-h-screen relative">
+    
+    <div class="absolute top-4 right-4 md:top-8 md:right-8 z-10">
+        <button onclick="openAdminModal()" id="login-btn" class="bg-gray-800 text-sm text-gray-300 hover:text-white hover:bg-gray-700 py-2 px-4 rounded-lg border border-gray-600 transition-all shadow-md flex items-center">
+            <span class="mr-2">🔒</span> 관리자 로그인
+        </button>
+        <button onclick="logoutAdmin()" id="logout-btn" class="hidden bg-gray-800 text-sm text-red-400 hover:text-red-300 hover:bg-gray-700 py-2 px-4 rounded-lg border border-red-900 transition-all shadow-md flex items-center">
+            <span class="mr-2">🔓</span> 로그아웃
+        </button>
+    </div>
+
     <div class="container mx-auto px-4 py-8 max-w-5xl">
-        <header class="mb-10 text-center">
+        <header class="mb-10 text-center mt-8 md:mt-0">
             <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">
                 ⚔️ LoL 내전 ELO 랭킹보드
             </h1>
             <p class="text-gray-400">우리들만의 치열한 전적과 티어</p>
         </header>
 
-        <div class="bg-gray-800 rounded-xl shadow-lg p-6 mb-10 border border-gray-700">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div id="admin-toolbox" class="hidden bg-gray-800 rounded-xl shadow-lg p-6 mb-10 border border-emerald-700 relative overflow-hidden">
+            <div class="absolute top-0 right-0 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">ADMIN MODE</div>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mt-2">
                 <div class="flex-1 w-full">
                     <h2 class="text-xl font-bold flex items-center mb-2">
                         <span class="text-indigo-400 mr-2">⚙️</span> 전적 수동 업데이트
@@ -59,14 +70,13 @@
                         <tr class="bg-gray-700 text-gray-300 text-sm uppercase tracking-wider">
                             <th class="p-4 rounded-tl-lg">Rank</th>
                             <th class="p-4">소환사명</th>
-                            <th class="p-4">본명 (소속)</th>
                             <th class="p-4 text-center">ELO 점수</th>
                             <th class="p-4 text-center">전적</th>
                             <th class="p-4 text-center rounded-tr-lg">승률</th>
                         </tr>
                     </thead>
                     <tbody id="ranking-body" class="text-gray-200">
-                        <tr><td colspan="6" class="p-4 text-center text-gray-500">불러오는 중...</td></tr>
+                        <tr><td colspan="5" class="p-4 text-center text-gray-500">불러오는 중...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -82,16 +92,29 @@
                         <tr class="bg-gray-700 text-gray-300 text-sm tracking-wider">
                             <th class="p-4 rounded-tl-lg">매치 ID</th>
                             <th class="p-4">게임 모드</th>
-                            <th class="p-4 text-center">시간</th>
                             <th class="p-4 text-center">승리 팀</th>
                             <th class="p-4 text-right rounded-tr-lg">플레이 일시</th>
                         </tr>
                     </thead>
                     <tbody id="matches-body" class="text-gray-200">
-                        <tr><td colspan="5" class="p-4 text-center text-gray-500">불러오는 중...</td></tr>
+                        <tr><td colspan="4" class="p-4 text-center text-gray-500">불러오는 중...</td></tr>
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center p-4 z-[60]">
+        <div class="bg-gray-800 rounded-xl max-w-sm w-full p-6 border border-gray-700 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white flex items-center"><span class="mr-2">🔑</span> 관리자 인증</h3>
+                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
+            </div>
+            <p class="text-sm text-gray-400 mb-4">전적 수집 및 팀 밸런서를 사용하려면 관리자 암호를 입력하세요.</p>
+            <input type="password" id="admin-password-input" placeholder="비밀번호 입력" class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-3 mb-4 outline-none" onkeypress="if(event.key === 'Enter') loginAdmin()">
+            <button onclick="loginAdmin()" id="admin-login-submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                인증하기
+            </button>
         </div>
     </div>
 
@@ -108,8 +131,7 @@
                         <p class="text-gray-300">오늘 내전에 참가할 <strong class="text-white">10명</strong>을 선택해주세요.</p>
                         <span id="selected-count" class="px-3 py-1 rounded bg-gray-700 text-sm font-bold text-amber-400">0 / 10명 선택됨</span>
                     </div>
-                    <div id="balancer-users-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                        </div>
+                    <div id="balancer-users-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
                 </div>
 
                 <button onclick="generateTeams()" id="generate-team-btn" disabled class="w-full bg-gray-700 text-gray-500 font-bold py-3 rounded-lg mb-6 cursor-not-allowed transition-all">
@@ -121,18 +143,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-blue-900 bg-opacity-20 border border-blue-800 rounded-lg p-4">
                             <h5 class="text-xl font-black text-blue-400 mb-1">💙 블루팀</h5>
-                            <p class="text-sm text-blue-200 mb-4 flex justify-between">
-                                <span>평균 ELO: <strong id="blue-avg">1200</strong></span>
-                                <span>예상 승률: <strong id="blue-winrate">50%</strong></span>
-                            </p>
+                            <p class="text-sm text-blue-200 mb-4 flex justify-between"><span>평균 ELO: <strong id="blue-avg">0</strong></span><span>예상 승률: <strong id="blue-winrate">0%</strong></span></p>
                             <ul id="blue-team-list" class="space-y-2"></ul>
                         </div>
                         <div class="bg-red-900 bg-opacity-20 border border-red-800 rounded-lg p-4">
                             <h5 class="text-xl font-black text-red-400 mb-1">❤️ 레드팀</h5>
-                            <p class="text-sm text-red-200 mb-4 flex justify-between">
-                                <span>평균 ELO: <strong id="red-avg">1200</strong></span>
-                                <span>예상 승률: <strong id="red-winrate">50%</strong></span>
-                            </p>
+                            <p class="text-sm text-red-200 mb-4 flex justify-between"><span>평균 ELO: <strong id="red-avg">0</strong></span><span>예상 승률: <strong id="red-winrate">0%</strong></span></p>
                             <ul id="red-team-list" class="space-y-2"></ul>
                         </div>
                     </div>
@@ -151,7 +167,7 @@
         </div>
     </div>
 
-    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center p-4 z-50">
+    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center p-4 z-[55]">
         <div class="bg-gray-800 rounded-xl max-w-2xl w-full p-6 border border-gray-700 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="profile-title" class="text-xl font-bold text-blue-400">프로필</h3>
@@ -165,6 +181,96 @@
         let globalUsers = []; 
         let selectedPuuids = new Set(); 
 
+        // --- 관리자 모드 관련 스크립트 ---
+        function checkAdminState() {
+            const isAdmin = sessionStorage.getItem('isAdmin');
+            if (isAdmin === 'true') {
+                document.getElementById('admin-toolbox').classList.remove('hidden');
+                document.getElementById('login-btn').classList.add('hidden');
+                document.getElementById('logout-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('admin-toolbox').classList.add('hidden');
+                document.getElementById('login-btn').classList.remove('hidden');
+                document.getElementById('logout-btn').classList.add('hidden');
+            }
+        }
+
+        function openAdminModal() {
+            document.getElementById('admin-modal').classList.remove('hidden');
+            document.getElementById('admin-password-input').focus();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.add('hidden');
+            document.getElementById('admin-password-input').value = '';
+        }
+
+        async function loginAdmin() {
+            const pwd = document.getElementById('admin-password-input').value;
+            if(!pwd) return alert('비밀번호를 입력하세요.');
+            
+            const btn = document.getElementById('admin-login-submit');
+            btn.innerText = '확인 중...'; btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/admin/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                });
+                
+                if (res.ok) {
+                    sessionStorage.setItem('isAdmin', 'true');
+                    sessionStorage.setItem('adminPwd', pwd); // API 통신용 암호 저장
+                    closeAdminModal();
+                    checkAdminState();
+                } else {
+                    alert('❌ 비밀번호가 틀렸습니다.');
+                }
+            } catch (e) {
+                alert('서버 통신 실패');
+            } finally {
+                btn.innerText = '인증하기'; btn.disabled = false;
+            }
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('isAdmin');
+            sessionStorage.removeItem('adminPwd');
+            checkAdminState();
+            alert('로그아웃 되었습니다.');
+        }
+
+        // --- 전적 동기화 (비밀번호 헤더 추가) ---
+        async function syncMatchData() {
+            const matchInput = document.getElementById('sync-match-id');
+            const syncBtn = document.getElementById('sync-btn');
+            const matchId = matchInput.value.trim();
+            if (!matchId) return alert("매치 ID를 입력해주세요!");
+
+            const pwd = sessionStorage.getItem('adminPwd');
+            if(!pwd) return alert('관리자 로그인이 만료되었습니다. 다시 로그인해주세요.');
+
+            syncBtn.innerText = "수집 중⏳"; syncBtn.disabled = true;
+            try {
+                const res = await fetch('/api/matches/sync', {
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-admin-password': pwd // 백엔드로 암호 전달
+                    },
+                    body: JSON.stringify({ match_id: matchId })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alert(result.message); matchInput.value = '';
+                    fetchRankings(); fetchMatches();
+                } else alert("❌ 오류: " + result.detail);
+            } catch (e) { alert("통신 실패"); } 
+            finally { syncBtn.innerText = "수집"; syncBtn.disabled = false; }
+        }
+
+        // --- 데이터 불러오기 및 UI 렌더링 ---
         async function fetchRankings() {
             try {
                 const response = await fetch('/api/rankings');
@@ -179,13 +285,11 @@
                         if (user.rank === 1) rankStyle = "text-yellow-400 font-bold text-xl";
                         else if (user.rank === 2) rankStyle = "text-gray-300 font-bold text-lg";
                         else if (user.rank === 3) rankStyle = "text-amber-600 font-bold text-lg";
-                        let nameStyle = user.real_name === "미등록" ? "text-gray-500 text-sm" : "text-gray-100 font-bold";
 
                         const row = `
                             <tr class="border-b border-gray-700 hover:bg-gray-750 transition-colors">
                                 <td class="p-4 ${rankStyle}">${user.rank}</td>
                                 <td class="p-4 font-bold text-blue-300 cursor-pointer hover:underline" onclick="openProfile('${user.puuid}')">${user.summoner_name}</td>
-                                <td class="p-4 ${nameStyle}">${user.real_name}</td>
                                 <td class="p-4 text-center font-bold text-emerald-400">${user.elo_rating}</td>
                                 <td class="p-4 text-center">${user.wins}승 ${user.losses}패</td>
                                 <td class="p-4 text-center text-sm">${user.win_rate}%</td>
@@ -214,7 +318,6 @@
                             <tr class="border-b border-gray-700 hover:bg-gray-750 transition-colors">
                                 <td class="p-4 text-blue-300 font-mono text-sm cursor-pointer hover:underline" onclick="openMatchDetail('${match.match_id}')">${match.match_id.replace('KR_', '')}</td>
                                 <td class="p-4 text-purple-300">${match.game_mode}</td>
-                                <td class="p-4 text-center text-gray-300">${match.game_duration_min}분</td>
                                 <td class="p-4 text-center ${teamColor}">${match.winning_team}</td>
                                 <td class="p-4 text-right text-gray-400 text-sm">${fDate}</td>
                             </tr>
@@ -225,219 +328,88 @@
             } catch (error) { console.error("매치 로드 실패:", error); }
         }
 
-        async function syncMatchData() {
-            const matchInput = document.getElementById('sync-match-id');
-            const syncBtn = document.getElementById('sync-btn');
-            const matchId = matchInput.value.trim();
-            if (!matchId) return alert("매치 ID를 입력해주세요!");
-
-            syncBtn.innerText = "수집 중⏳"; syncBtn.disabled = true;
-            try {
-                const res = await fetch('/api/matches/sync', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ match_id: matchId })
-                });
-                const result = await res.json();
-                if (res.ok) {
-                    alert(result.message); matchInput.value = '';
-                    fetchRankings(); fetchMatches();
-                } else alert("❌ 오류: " + result.detail);
-            } catch (e) { alert("통신 실패"); } 
-            finally { syncBtn.innerText = "수집"; syncBtn.disabled = false; }
-        }
-
-        // --- 완벽히 복구된 경기 상세 팝업 함수 ---
         async function openMatchDetail(matchId) {
             const modal = document.getElementById('match-modal');
-            const modalTitle = document.getElementById('modal-title');
             const modalContent = document.getElementById('modal-content');
-            
             modal.classList.remove('hidden');
-            modalTitle.innerText = `경기 상세 정보 (${matchId})`;
+            document.getElementById('modal-title').innerText = `경기 상세 정보 (${matchId})`;
             modalContent.innerHTML = '<p class="text-center text-gray-400 py-8">데이터를 불러오는 중...</p>';
 
             try {
                 const response = await fetch(`/api/matches/${matchId}`);
                 const result = await response.json();
-
                 if (result.status === 'success') {
-                    const info = result.match_info;
-                    const parts = result.participants;
-
+                    const info = result.match_info; const parts = result.participants;
                     const blueTeam = parts.filter(p => p.team_id === 100);
                     const redTeam = parts.filter(p => p.team_id === 200);
 
-                    let html = `
-                        <div class="text-sm text-gray-400 mb-4 flex justify-between bg-gray-900 p-3 rounded-lg border border-gray-700">
-                            <span>게임 시간: <strong class="text-white">${info.duration_min}분</strong></span>
-                            <span>승리팀: <strong class="${info.winning_team === 100 ? 'text-blue-400' : 'text-red-400'}">${info.winning_team === 100 ? '블루팀' : '레드팀'}</strong></span>
-                        </div>
-                    `;
-
-                    const renderTeamTable = (teamName, teamData, isWin) => {
-                        const headerColor = teamName.includes("블루") ? "bg-blue-900 text-blue-200" : "bg-red-900 text-red-200";
-                        const winBadge = isWin ? '<span class="ml-2 px-2 py-0.5 text-xs bg-emerald-600 text-white rounded font-bold">승리</span>' : '<span class="ml-2 px-2 py-0.5 text-xs bg-red-600 text-white rounded font-bold">패배</span>';
-                        
+                    const renderTeam = (name, data, isWin) => {
+                        const headerColor = name.includes("블루") ? "bg-blue-900 text-blue-200" : "bg-red-900 text-red-200";
+                        const winBadge = isWin ? '<span class="ml-2 px-2 py-0.5 text-xs bg-emerald-600 text-white rounded">승리</span>' : '';
                         let rows = '';
-                        teamData.forEach(p => {
-                            rows += `
-                                <tr class="border-b border-gray-700 text-sm hover:bg-gray-800 transition-colors">
-                                    <td class="p-3 font-bold text-blue-300 cursor-pointer hover:underline" onclick="openProfile('${p.puuid}')">${p.summoner_name}</td>
-                                    <td class="p-3 text-gray-300">${p.champion_name}</td>
-                                    <td class="p-3 text-center">${p.kills}/${p.deaths}/${p.assists} <span class="text-xs text-gray-400">(${p.kda})</span></td>
-                                    <td class="p-3 text-center text-emerald-300">${p.total_damage.toLocaleString()}</td>
-                                    <td class="p-3 text-right text-yellow-300">${p.gold_earned.toLocaleString()}</td>
-                                </tr>
-                            `;
+                        data.forEach(p => {
+                            rows += `<tr class="border-b border-gray-700 text-sm hover:bg-gray-800">
+                                <td class="p-3 font-bold text-blue-300 cursor-pointer hover:underline" onclick="openProfile('${p.puuid}')">${p.summoner_name}</td>
+                                <td class="p-3 text-gray-300">${p.champion_name}</td>
+                                <td class="p-3 text-center">${p.kills}/${p.deaths}/${p.assists}</td>
+                                <td class="p-3 text-center text-emerald-300">${p.total_damage.toLocaleString()}</td>
+                            </tr>`;
                         });
-
-                        return `
-                            <div class="mb-6">
-                                <h4 class="text-lg font-bold p-3 rounded-t-lg ${headerColor} flex items-center border border-b-0 border-gray-700">
-                                    ${teamName} ${winBadge}
-                                </h4>
-                                <div class="overflow-x-auto bg-gray-900 rounded-b-lg border border-gray-700">
-                                    <table class="w-full text-left">
-                                        <thead>
-                                            <tr class="text-xs text-gray-400 border-b border-gray-700 bg-gray-800">
-                                                <th class="p-3">소환사명</th>
-                                                <th class="p-3">챔피언</th>
-                                                <th class="p-3 text-center">KDA</th>
-                                                <th class="p-3 text-center">가한 피해량</th>
-                                                <th class="p-3 text-right">획득 골드</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>${rows}</tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        `;
+                        return `<div class="mb-6"><h4 class="text-lg font-bold p-3 rounded-t-lg ${headerColor} flex items-center">${name} ${winBadge}</h4>
+                                <div class="overflow-x-auto bg-gray-900 rounded-b-lg"><table class="w-full text-left">
+                                <thead><tr class="text-xs text-gray-400 bg-gray-800"><th class="p-3">소환사명</th><th class="p-3">챔피언</th><th class="p-3 text-center">KDA</th><th class="p-3 text-center">피해량</th></tr></thead>
+                                <tbody>${rows}</tbody></table></div></div>`;
                     };
 
-                    html += renderTeamTable("💙 블루팀 (100)", blueTeam, info.winning_team === 100);
-                    html += renderTeamTable("❤️ 레드팀 (200)", redTeam, info.winning_team === 200);
-
-                    modalContent.innerHTML = html;
+                    modalContent.innerHTML = renderTeam("💙 블루팀", blueTeam, info.winning_team === 100) + renderTeam("❤️ 레드팀", redTeam, info.winning_team === 200);
                 }
-            } catch (error) {
-                modalContent.innerHTML = '<p class="text-center text-red-400 py-8">상세 정보를 불러오지 못했습니다.</p>';
-            }
+            } catch (e) { modalContent.innerHTML = '<p class="text-center text-red-400 py-8">상세 정보를 불러오지 못했습니다.</p>'; }
         }
 
-        // --- 완벽히 복구된 개인 프로필 팝업 함수 ---
         async function openProfile(puuid) {
             const modal = document.getElementById('profile-modal');
-            const profileTitle = document.getElementById('profile-title');
             const profileContent = document.getElementById('profile-content');
-            
             modal.classList.remove('hidden');
-            profileTitle.innerText = `소환사 프로필`;
             profileContent.innerHTML = '<p class="text-center text-gray-400 py-8">프로필을 불러오는 중...</p>';
-
-            document.getElementById('match-modal').classList.add('hidden'); // 상세창 닫기
-
+            
             try {
                 const response = await fetch(`/api/users/${puuid}`);
                 const result = await response.json();
-
                 if (result.status === 'success') {
                     const user = result.user_info;
-                    const mosts = result.most_champions;
-                    const history = result.match_history;
-
-                    profileTitle.innerText = `${user.summoner_name} 님의 프로필`;
-
-                    let mostHtml = '';
-                    if (mosts.length === 0) {
-                        mostHtml = '<p class="text-gray-500 text-sm">플레이 기록이 없습니다.</p>';
-                    } else {
-                        mosts.forEach(m => {
-                            mostHtml += `
-                                <div class="bg-gray-900 p-3 rounded-lg border border-gray-700 flex justify-between items-center text-sm">
-                                    <div>
-                                        <strong class="text-blue-300 text-base">${m.champion_name}</strong>
-                                        <span class="text-gray-400 ml-2">(${m.games}전 ${m.wins}승 ${m.losses}패)</span>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-emerald-400 font-bold">${m.win_rate}%</span>
-                                        <span class="text-gray-400 ml-3">평균 KDA: ${m.avg_kda}</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    }
-
-                    let historyHtml = '';
-                    if (history.length === 0) {
-                        historyHtml = '<p class="text-gray-500 text-sm">최근 경기 기록이 없습니다.</p>';
-                    } else {
-                        history.forEach(h => {
-                            const resultBadge = h.is_win ? '<span class="text-emerald-400 font-bold">승리</span>' : '<span class="text-red-400 font-bold">패배</span>';
-                            historyHtml += `
-                                <div class="bg-gray-900 p-3 rounded-lg border border-gray-700 flex justify-between items-center text-sm cursor-pointer hover:bg-gray-800 transition-colors" onclick="openMatchDetail('${h.match_id}')">
-                                    <div>
-                                        ${resultBadge}
-                                        <span class="text-white font-bold ml-3">${h.champion_name}</span>
-                                        <span class="text-gray-500 text-xs ml-2">(${h.duration_min}분)</span>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-gray-200 font-medium">${h.kda_string}</span>
-                                        <span class="text-xs text-gray-500 ml-2">(${h.kda})</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    }
+                    document.getElementById('profile-title').innerText = `${user.summoner_name} 님의 프로필`;
+                    let historyHtml = result.match_history.length === 0 ? '<p class="text-gray-500 text-sm">기록이 없습니다.</p>' : result.match_history.map(h => 
+                        `<div class="bg-gray-900 p-3 mb-2 rounded-lg border border-gray-700 flex justify-between text-sm cursor-pointer hover:bg-gray-800" onclick="openMatchDetail('${h.match_id}')">
+                            <div>${h.is_win ? '<span class="text-emerald-400 font-bold">승리</span>' : '<span class="text-red-400 font-bold">패배</span>'} <span class="text-white ml-2">${h.champion_name}</span></div>
+                            <div class="text-right text-gray-300">${h.kda_string}</div>
+                        </div>`
+                    ).join('');
 
                     profileContent.innerHTML = `
-                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-700 flex justify-around text-center mb-6 shadow-inner">
-                            <div>
-                                <p class="text-gray-400 text-xs mb-1">현재 ELO</p>
-                                <p class="text-3xl font-black text-emerald-400">${user.elo_rating}</p>
-                            </div>
-                            <div class="border-r border-gray-700"></div>
-                            <div>
-                                <p class="text-gray-400 text-xs mb-1">전적 (승률)</p>
-                                <p class="text-xl font-bold text-gray-200 mt-1">${user.wins}승 ${user.losses}패 <span class="text-sm text-blue-400 ml-1">(${user.win_rate}%)</span></p>
-                            </div>
+                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-700 flex justify-around text-center mb-6">
+                            <div><p class="text-gray-400 text-xs mb-1">ELO</p><p class="text-3xl font-black text-emerald-400">${user.elo_rating}</p></div>
+                            <div><p class="text-gray-400 text-xs mb-1">전적</p><p class="text-xl font-bold text-gray-200 mt-1">${user.wins}승 ${user.losses}패</p></div>
                         </div>
-                        <div class="mb-6">
-                            <h4 class="text-md font-bold text-yellow-400 mb-3 flex items-center"><span class="mr-2">⭐</span> 모스트 챔피언 TOP 5</h4>
-                            <div class="space-y-2">${mostHtml}</div>
-                        </div>
-                        <div>
-                            <h4 class="text-md font-bold text-blue-400 mb-3 flex items-center"><span class="mr-2">📜</span> 최근 개인 경기 기록</h4>
-                            <div class="space-y-2">${historyHtml}</div>
-                        </div>
+                        <div><h4 class="text-md font-bold text-blue-400 mb-3 flex items-center">📜 최근 10경기</h4>${historyHtml}</div>
                     `;
                 }
-            } catch (error) {
-                profileContent.innerHTML = '<p class="text-center text-red-400 py-8">프로필을 불러오지 못했습니다.</p>';
-            }
+            } catch (e) { profileContent.innerHTML = '<p class="text-center text-red-400 py-8">프로필을 불러오지 못했습니다.</p>'; }
         }
 
-        // --- 자동 팀 밸런서 관련 스크립트 ---
+        // --- 자동 팀 밸런서 ---
         function openBalancerModal() {
             document.getElementById('balancer-modal').classList.remove('hidden');
             document.getElementById('balancer-result').classList.add('hidden');
             selectedPuuids.clear();
-            
             const grid = document.getElementById('balancer-users-grid');
             grid.innerHTML = '';
-            const sortedUsers = [...globalUsers].sort((a, b) => a.summoner_name.localeCompare(b.summoner_name));
-            
-            sortedUsers.forEach(user => {
-                const displayName = user.real_name !== "미등록" ? user.real_name : user.summoner_name.split('#')[0];
-                const div = document.createElement('div');
-                div.className = "flex items-center p-2 rounded border border-gray-700 hover:bg-gray-700 cursor-pointer transition-colors";
-                div.innerHTML = `
-                    <input type="checkbox" id="chk-${user.puuid}" value="${user.puuid}" class="w-4 h-4 text-amber-500 bg-gray-900 border-gray-600 rounded mr-2" onclick="toggleUser('${user.puuid}')">
+            [...globalUsers].sort((a,b)=>a.summoner_name.localeCompare(b.summoner_name)).forEach(user => {
+                grid.innerHTML += `<div class="flex items-center p-2 rounded border border-gray-700 hover:bg-gray-700 cursor-pointer">
+                    <input type="checkbox" id="chk-${user.puuid}" class="mr-2" onclick="toggleUser('${user.puuid}')">
                     <label class="flex-1 cursor-pointer truncate" for="chk-${user.puuid}">
-                        <div class="text-sm font-bold text-gray-200 truncate">${displayName}</div>
+                        <div class="text-sm font-bold text-gray-200">${user.summoner_name.split('#')[0]}</div>
                         <div class="text-xs text-emerald-400 mt-0.5">ELO: ${user.elo_rating}</div>
-                    </label>
-                `;
-                grid.appendChild(div);
+                    </label></div>`;
             });
             updateBalancerUI();
         }
@@ -445,80 +417,41 @@
         function toggleUser(puuid) {
             const chk = document.getElementById(`chk-${puuid}`);
             if (chk.checked) {
-                if (selectedPuuids.size >= 10) {
-                    alert("최대 10명까지만 선택할 수 있습니다.");
-                    chk.checked = false;
-                    return;
-                }
+                if (selectedPuuids.size >= 10) { alert("최대 10명까지만 선택 가능합니다."); chk.checked = false; return; }
                 selectedPuuids.add(puuid);
-            } else {
-                selectedPuuids.delete(puuid);
-            }
+            } else selectedPuuids.delete(puuid);
             updateBalancerUI();
         }
 
         function updateBalancerUI() {
-            const countSpan = document.getElementById('selected-count');
             const btn = document.getElementById('generate-team-btn');
-            const count = selectedPuuids.size;
-            
-            countSpan.innerText = `${count} / 10명 선택됨`;
-            
-            if (count === 10) {
-                btn.disabled = false;
-                btn.className = "w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-lg py-3 rounded-lg mb-6 shadow-lg transition-all transform hover:scale-[1.01]";
-                btn.innerText = "⚔️ 최적의 5:5 밸런스 팀 생성하기!";
+            document.getElementById('selected-count').innerText = `${selectedPuuids.size} / 10명 선택됨`;
+            if (selectedPuuids.size === 10) {
+                btn.disabled = false; btn.className = "w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg py-3 rounded-lg mb-6 shadow-lg"; btn.innerText = "⚔️ 최적의 5:5 밸런스 팀 생성하기!";
             } else {
-                btn.disabled = true;
-                btn.className = "w-full bg-gray-700 text-gray-500 font-bold py-3 rounded-lg mb-6 cursor-not-allowed transition-all";
-                btn.innerText = `참가자 10명을 선택해주세요 (현재 ${count}명)`;
+                btn.disabled = true; btn.className = "w-full bg-gray-700 text-gray-500 font-bold py-3 rounded-lg mb-6 cursor-not-allowed"; btn.innerText = `참가자 10명을 선택해주세요 (${selectedPuuids.size}명)`;
             }
         }
 
         async function generateTeams() {
-            const btn = document.getElementById('generate-team-btn');
-            btn.innerText = "계산 중... ⏳";
-            
+            const btn = document.getElementById('generate-team-btn'); btn.innerText = "계산 중... ⏳";
             try {
-                const response = await fetch('/api/team-balance', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ puuids: Array.from(selectedPuuids) })
-                });
-                
-                const result = await response.json();
-                
+                const res = await fetch('/api/team-balance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ puuids: Array.from(selectedPuuids) }) });
+                const result = await res.json();
                 if (result.status === 'success') {
                     document.getElementById('balancer-result').classList.remove('hidden');
-                    
-                    document.getElementById('blue-avg').innerText = Math.round(result.avg_blue);
-                    document.getElementById('blue-winrate').innerText = `${result.expected_win_rate_blue}%`;
-                    const blueList = document.getElementById('blue-team-list');
-                    blueList.innerHTML = '';
-                    result.team_blue.forEach(u => {
-                        blueList.innerHTML += `<li class="bg-blue-950 px-3 py-2 rounded border border-blue-800 flex justify-between"><span class="text-blue-100 font-bold">${u.name}</span><span class="text-emerald-400 text-sm font-mono">${u.elo}</span></li>`;
-                    });
-
-                    document.getElementById('red-avg').innerText = Math.round(result.avg_red);
-                    document.getElementById('red-winrate').innerText = `${result.expected_win_rate_red}%`;
-                    const redList = document.getElementById('red-team-list');
-                    redList.innerHTML = '';
-                    result.team_red.forEach(u => {
-                        redList.innerHTML += `<li class="bg-red-950 px-3 py-2 rounded border border-red-800 flex justify-between"><span class="text-red-100 font-bold">${u.name}</span><span class="text-emerald-400 text-sm font-mono">${u.elo}</span></li>`;
-                    });
+                    const renderList = (id, data) => document.getElementById(id).innerHTML = data.map(u => `<li class="bg-gray-900 px-3 py-2 rounded flex justify-between"><span class="font-bold">${u.name}</span><span class="text-emerald-400 text-sm">${u.elo}</span></li>`).join('');
+                    renderList('blue-team-list', result.team_blue); document.getElementById('blue-avg').innerText = Math.round(result.avg_blue); document.getElementById('blue-winrate').innerText = `${result.expected_win_rate_blue}%`;
+                    renderList('red-team-list', result.team_red); document.getElementById('red-avg').innerText = Math.round(result.avg_red); document.getElementById('red-winrate').innerText = `${result.expected_win_rate_red}%`;
                 }
-            } catch (error) {
-                alert("팀 생성 중 오류가 발생했습니다.");
-            } finally {
-                updateBalancerUI(); 
-            }
+            } catch (e) { alert("팀 생성 실패"); } finally { updateBalancerUI(); }
         }
 
         function closeBalancerModal() { document.getElementById('balancer-modal').classList.add('hidden'); }
         function closeMatchModal() { document.getElementById('match-modal').classList.add('hidden'); }
         function closeProfileModal() { document.getElementById('profile-modal').classList.add('hidden'); }
 
-        window.onload = () => { fetchRankings(); fetchMatches(); };
+        window.onload = () => { fetchRankings(); fetchMatches(); checkAdminState(); };
     </script>
 </body>
 </html>
